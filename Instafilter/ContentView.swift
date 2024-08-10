@@ -8,17 +8,23 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var blurAmount = 0.0
+    @State private var show = false
     
     var body: some View {
-        Text("Hello World")
-            .blur(radius: blurAmount)
-        
-        Slider(value: $blurAmount, in: 0...20)
-        
         Button("Random blur") {
-            blurAmount = Double.random(in: 0...20)
+            show.toggle()
         }
+            .frame(width: 130, height: 130)
+            .background(.blue)
+            .clipShape(Circle())
+            .foregroundStyle(.white)
+            .overlay {
+                Rectangle().stroke(.clear ,lineWidth: 1)
+            }
+            .shadow(radius: 3)
+            .confirmationDialog("Hi", isPresented: $show) {
+                Button("Hi") { }
+            }
     }
 }
 
