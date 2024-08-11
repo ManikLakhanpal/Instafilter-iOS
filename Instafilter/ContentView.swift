@@ -31,7 +31,14 @@ struct ContentView: View {
         let currentFilter = CIFilter.sepiaTone() // basically our filter.
         
         currentFilter.inputImage = beginImage // Image which is beign given to modify.
-        currentFilter.intensity = 0.5 // Intensity of the filter.
+        
+        let amount = 0.4
+        
+        let inputKeys = currentFilter.inputKeys
+        
+        if inputKeys.contains(kCIInputIntensityKey) {
+            currentFilter.setValue(amount, forKey: kCIInputIntensityKey)
+        }
         
         guard let outputImage = currentFilter.outputImage else { return } // gets the output CI image.
         guard let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else { return }  // Converts CI to CG.
