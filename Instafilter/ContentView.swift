@@ -5,26 +5,40 @@
 //  Created by Manik Lakhanpal on 10/08/24.
 //
 
+import CoreImage
+import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 struct ContentView: View {
-    @State private var show = false
+    @State private var image: Image?
     
     var body: some View {
-        Button("Random blur") {
-            show.toggle()
+        VStack {
+            image?
+                .resizable()
+                .scaledToFill()
         }
-            .frame(width: 130, height: 130)
-            .background(.blue)
-            .clipShape(Circle())
-            .foregroundStyle(.white)
-            .overlay {
-                Rectangle().stroke(.clear ,lineWidth: 1)
-            }
-            .shadow(radius: 3)
-            .confirmationDialog("Hi", isPresented: $show) {
-                Button("Hi") { }
-            }
+        .ignoresSafeArea()
+        .onAppear(perform: loadImage)
+    }
+    
+    func loadImage() {
+        // Converts UI image to Core Image for editing.
+        let inputImage = UIImage(resource: .example)
+        let beginImage = CIImage(image: inputImage)
+        
+        let context = CIContext() // object to use full potential of CPU and the GPU.
+        let currentFilter = CIFilter.sepiaTone() // basically our filter.
+        
+        currentFilter.inputImage = beginImage // Image which is beign given to modify.
+        currentFilter.intensity = 0.5 // Intensity of the filter.
+        
+        guard let outputImage = currentFilter.outputImage else { return } // gets the output CI image.
+        guard let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else { return }  // Converts CI to CG.
+        
+        let uiImage = UIImage(cgImage: cgImage) // CG to UI image.
+        image = Image(uiImage: uiImage)
+        
     }
 }
 
