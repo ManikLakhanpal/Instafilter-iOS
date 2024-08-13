@@ -10,40 +10,54 @@ import SwiftUI
 import StoreKit
 
 struct ContentView: View {
-    @State private var pickerItems = [PhotosPickerItem]() // Allows us to select photos from library
-    @State private var selectedImages = [Image]() // Array of photos :)
-    @Environment(\.requestReview) var requestReview
+    @State private var pickerItems: PhotosPickerItem?
+    @State private var processedImage: Image?
+    @State private var filterIntensity = 0.5
     
     var body: some View {
-        VStack {
-            PhotosPicker("Select a picture", selection: $pickerItems, maxSelectionCount: 3 ,matching: .images)
-            
-            ShareLink(item: URL(string: "https://www.w16manik.ninja")!) {
-                Label("Share", systemImage: "square.and.arrow.up")
-            }
-            
-            ScrollView {
-                ForEach(0..<selectedImages.count, id: \.self) { i in
-                    selectedImages[i]
+        NavigationStack {
+            VStack {
+                Spacer()
+                
+                if let processedImage {
+                    processedImage
                         .resizable()
                         .scaledToFit()
-                }
-            }
-            
-            Button("Leave a review") {
-                requestReview()
-            }
-            
-        }
-        .onChange(of: pickerItems) {
-            Task {
-                selectedImages.removeAll()
-                
-                for item in pickerItems {
-                    if let loadedImage = try await item.loadTransferable(type: Image.self) {
-                        selectedImages.append(loadedImage)
+                } else {
+                    PhotosPicker(selection: $pickerItems, matching: .images) {
+                        ContentUnavailableView("No Picture", systemImage: "photo.badge.plus", description: Text("Tap to import a photo"))
                     }
                 }
+                                
+                Spacer()
+                
+                HStack {
+                    Text("Intensity")
+                    Slider(value: $filterIntensity, in:0...1)
+                }
+                .padding(.vertical)
+
+                HStack {
+                    Button("Change Filter") {
+                        // Change filter
+                    }
+                    
+                    Spacer()
+                }
+            }
+            .padding([.horizontal, .bottom])
+            .navigationTitle("Instafilter")
+            .onChange(of: pickerItems) {
+                Task {
+                    processedImage = try await pickerItems?.loadTransferable(type: Image.self)
+                }
+            }
+            .toolbar {
+                Button("Remove", systemImage: "trash") {
+                    pickerItems = nil
+                    processedImage = nil
+                }
+                .foregroundColor(.red)
             }
         }
     }
