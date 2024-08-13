@@ -7,12 +7,15 @@
 
 import PhotosUI
 import SwiftUI
-import StoreKit
+import CoreImage
+import CoreImage.CIFilterBuiltins
 
 struct ContentView: View {
-    @State private var pickerItems: PhotosPickerItem?
+    @State private var selectedItem: PhotosPickerItem?
     @State private var processedImage: Image?
     @State private var filterIntensity = 0.5
+    @State private var currentFilter = CIFilter.sepiaTone()
+    let context = CIContext()
     
     var body: some View {
         NavigationStack {
@@ -24,9 +27,16 @@ struct ContentView: View {
                         .resizable()
                         .scaledToFit()
                 } else {
-                    PhotosPicker(selection: $pickerItems, matching: .images) {
-                        ContentUnavailableView("No Picture", systemImage: "photo.badge.plus", description: Text("Tap to import a photo"))
+                    PhotosPicker(selection: $selectedItem) {
+                        if let processedImage {
+                            processedImage
+                                .resizable()
+                                .scaledToFit()
+                        } else {
+                            ContentUnavailableView("No Picture", systemImage: "photo.badge.plus", description: Text("Import a photo to get started"))
+                        }
                     }
+                    .onChange(of: selectedItem, loadImage)
                 }
                                 
                 Spacer()
@@ -34,32 +44,51 @@ struct ContentView: View {
                 HStack {
                     Text("Intensity")
                     Slider(value: $filterIntensity, in:0...1)
+                        .onChange(of: filterIntensity, applyProcessing)
                 }
                 .padding(.vertical)
 
                 HStack {
-                    Button("Change Filter") {
-                        // Change filter
-                    }
+                    Button("Change Filter", action: changeFilter)
                     
                     Spacer()
                 }
             }
             .padding([.horizontal, .bottom])
             .navigationTitle("Instafilter")
-            .onChange(of: pickerItems) {
-                Task {
-                    processedImage = try await pickerItems?.loadTransferable(type: Image.self)
-                }
-            }
             .toolbar {
-                Button("Remove", systemImage: "trash") {
-                    pickerItems = nil
-                    processedImage = nil
+                Button("Remove Item", systemImage: "trash") {
+                selectedItem = nil
+                processedImage = nil
                 }
-                .foregroundColor(.red)
             }
+
         }
+    }
+    
+    func changeFilter() {
+        // functioning
+    }
+    
+    func loadImage() {
+        Task {
+            guard let imageData = try await selectedItem?.loadTransferable(type: Data.self) else { return }
+            guard let inputImage = UIImage(data: imageData) else { return }
+            
+            let beginImage = CIImage(image: inputImage)
+            currentFilter.setValue(beginImage, forKey: kCIInputImageKey)
+            applyProcessing()
+        }
+    }
+    
+    func applyProcessing() {
+        currentFilter.intensity = Float(filterIntensity)
+
+        guard let outputImage = currentFilter.outputImage else { return }
+        guard let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else { return }
+
+        let uiImage = UIImage(cgImage: cgImage)
+        processedImage = Image(uiImage: uiImage)
     }
 }
 
