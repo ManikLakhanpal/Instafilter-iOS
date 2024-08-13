@@ -19,7 +19,7 @@ struct ContentView: View {
             PhotosPicker("Select a picture", selection: $pickerItems, maxSelectionCount: 3 ,matching: .images)
             
             ShareLink(item: URL(string: "https://www.w16manik.ninja")!) {
-                Label("swift", systemImage: "swift")
+                Label("Share", systemImage: "square.and.arrow.up")
             }
             
             ScrollView {
